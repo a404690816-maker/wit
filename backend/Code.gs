@@ -80,6 +80,7 @@ function doPost(e) {
       case 'publish': auth_(b.token); return json_(publish_(b.keys || []));
       case 'unpublish': auth_(b.token); return json_(unpublish_(b.no));
       case 'draw': auth_(b.token); return json_(drawLucky_(!!b.redo));
+      case 'attend': auth_(b.token); return json_(setAttend_(b.keys || []));
       case 'status': auth_(b.token); buildStatus_(); return json_({ ok: true, msg: '已更新「完成情形」工作表。' });
       default: return json_({ ok: false, msg: '未知的請求' });
     }
@@ -208,7 +209,28 @@ function adminData_() {
     rejected: logs.filter(r => r[4] !== '有效').map(r => ({ at: fmt_(r[0]), role: r[1], id: String(r[2]), name: r[3], result: r[4] })),
     rank: rank_(works, tally).map((r, i) => ({ rank: i + 1, no: r.no, title: r.title, theme: String(r.theme).slice(0, 3), author: r.name, first: r.firstMs < 9e15 ? fmt_(r.firstMs) : '', votes: r.votes })),
     lucky: luckyResults_(), luckyPool: luckyPool_().map(p => p.name),
+    roster: roster.filter(p => !p.admin).map(p => ({ key: k(p), role: p.role, id: p.id, name: p.name, attended: p.attended })),
   };
+}
+
+/* ---------- 標記 11/11 參加者 ---------- */
+function setAttend_(keys) {
+  const want = new Set(keys);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const sh = sheet_(SH.roster), rows = sh.getDataRange().getValues();
+    if (rows.length < 2) return { ok: false, msg: '名單是空的。' };
+    let n = 0;
+    const col = rows.slice(1).map(r => {
+      const role = String(r[0]).indexOf('實習') >= 0 ? ROLE_INTERN : ROLE_STAFF;
+      const key = role + '|' + norm_(role === ROLE_INTERN ? r[2] : r[1]);
+      if (String(r[4]).trim() === '是') return [r[3]];
+      const on = want.has(key); if (on) n++;
+      return [on ? '是' : '否'];
+    });
+    sh.getRange(2, 4, col.length, 1).setValues(col);
+    return { ok: true, msg: '已儲存，共 ' + n + ' 位參加者。' };
+  } finally { lock.releaseLock(); }
 }
 
 /* ---------- 公開作品（隨機編號） ---------- */

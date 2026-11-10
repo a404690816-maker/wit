@@ -205,9 +205,38 @@
     $("p-rank").innerHTML = '<p class="note">依票數排序，同票以首次成功投稿時間較早者優先。作者姓名僅承辦人可見。</p>'
       + table(["名次", "編號", "題目", "主題", "作者", "首次投稿", "票數"], d.rank.map(function (r) { return "<tr><td>" + (r.rank <= 3 ? '<b style="color:var(--gold)">最具共鳴獎 ' + r.rank + "</b>" : r.rank) + "</td><td>" + esc(r.no) + "</td><td>" + esc(r.title) + "</td><td>" + esc(r.theme) + "</td><td>" + esc(r.author) + "</td><td>" + esc(r.first) + '</td><td class="n"><b>' + r.votes + "</b></td></tr>"; }));
     renderLucky();
+    renderAttend();
   }
+  var ATT = null, attFilter = "";
+  function renderAttend() {
+    var d = S.admin; if (!d.roster) return;
+    if (!ATT) { ATT = {}; d.roster.forEach(function (p) { ATT[p.key] = !!p.attended; }); }
+    var n = d.roster.filter(function (p) { return ATT[p.key]; }).length;
+    var list = d.roster.filter(function (p) { return !attFilter || (p.name + p.id).toUpperCase().indexOf(attFilter.toUpperCase()) >= 0; });
+    var box = $("p-attend"), keepFocus = document.activeElement && document.activeElement.id === "attSearch";
+    box.innerHTML = '<p class="note">11/11 現場點名：勾選有來看電影的同仁，按「儲存」寫入試算表。勾選的人才會計入「應投稿」與「未投稿名單」。承辦人不列入。</p>'
+      + '<div class="att-tools"><input type="text" id="attSearch" placeholder="搜尋姓名或人事號" value="' + esc(attFilter) + '"><button type="button" class="ghost" id="attAll">全選</button><button type="button" class="ghost" id="attNone">全不選</button></div>'
+      + '<div class="att-grid">' + list.map(function (p) {
+        return '<label class="att' + (ATT[p.key] ? " on" : "") + '"><input type="checkbox" class="attck" data-k="' + esc(p.key) + '"' + (ATT[p.key] ? " checked" : "") + '><span>' + esc(p.name) + "<small>" + esc(p.role === "實習學生" ? "實習學生" : p.id) + "</small></span></label>";
+      }).join("") + "</div>"
+      + '<div class="att-save"><b id="attN">已勾選 ' + n + ' / ' + d.roster.length + ' 人</b><button type="button" id="attSave">儲存</button><span class="status" id="attMsg"></span></div>';
+    if (keepFocus) { var i = $("attSearch"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+  }
+  document.addEventListener("input", function (e) { if (e.target.id === "attSearch") { attFilter = e.target.value.trim(); renderAttend(); } });
+  document.addEventListener("change", function (e) {
+    if (e.target.classList.contains("attck")) {
+      ATT[e.target.dataset.k] = e.target.checked; e.target.closest(".att").classList.toggle("on", e.target.checked);
+      var n = S.admin.roster.filter(function (p) { return ATT[p.key]; }).length; $("attN").textContent = "已勾選 " + n + " / " + S.admin.roster.length + " 人（尚未儲存）"; setMsg("attMsg", "");
+    }
+  });
   document.addEventListener("click", function (e) {
     var t = e.target;
+    if (t.id === "attAll" || t.id === "attNone") { var v = t.id === "attAll"; S.admin.roster.forEach(function (p) { if (!attFilter || (p.name + p.id).toUpperCase().indexOf(attFilter.toUpperCase()) >= 0) ATT[p.key] = v; }); renderAttend(); }
+    if (t.id === "attSave") {
+      var keys = Object.keys(ATT).filter(function (k) { return ATT[k]; });
+      t.disabled = true; setMsg("attMsg", "儲存中…");
+      adminCall({ action: "attend", keys: keys }).then(function (r) { setMsg("attMsg", r.msg, r.ok ? "ok" : "err"); t.disabled = false; if (r.ok) { ATT = null; loadAdmin(); } }).catch(function () { t.disabled = false; });
+    }
     if (t.closest("#dtabs a")) { var a = t.closest("#dtabs a"); document.querySelectorAll("#dtabs a").forEach(function (x) { x.classList.toggle("on", x === a); }); document.querySelectorAll(".pane").forEach(function (p) { p.classList.toggle("on", p.id === "p-" + a.dataset.p); }); }
     if (t.id === "pubBtn") {
       var keys = Array.prototype.map.call(document.querySelectorAll(".pubck:checked"), function (c) { return c.value; });
