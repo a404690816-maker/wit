@@ -114,7 +114,11 @@
     }
     S.picks = S.picks.filter(function (x) { return d.works.some(function (w) { return w.no === x; }); });
     var canPick = p === "during" && !S.voted;
-    var list = d.works.filter(function (w) { return S.cat === "all" || w.theme === S.cat; });
+    // 每位讀者看到的作品順序都不同（同一次瀏覽中保持不變），避免排在前面的作品佔優勢
+    S.order = S.order || {};
+    d.works.forEach(function (w) { if (!(w.no in S.order)) S.order[w.no] = Math.random(); });
+    var list = d.works.filter(function (w) { return S.cat === "all" || w.theme === S.cat; })
+      .sort(function (a, b) { return S.order[a.no] - S.order[b.no]; });
     $("works").innerHTML = list.length ? list.map(function (w) {
       var on = S.picks.indexOf(w.no) >= 0;
       return '<article class="post' + (on ? " picked" : "") + '"><div class="meta"><b>No.' + esc(w.no) + '</b><span class="tag">' + esc(w.theme) + "</span><span>匿名投稿</span></div><h3>" + esc(w.title) + '</h3><div class="text">' + esc(w.body) + '</div><div class="foot"><span class="heart">♥ 共鳴 ' + (p === "before" ? "—" : w.votes) + " 票</span>"
