@@ -197,7 +197,7 @@
     $("tiles").innerHTML = tile("有效投稿", s.subValid, s.attendees, s.attendees ? "應投稿 " + s.attendees + " 人" : "名單尚未標記參加者")
       + tile("參加者未投稿", s.attendNoSub, 0, "列入 Seminar 提問名單") + tile("已投票", s.voted, s.voters, "未投票 " + (s.voters - s.voted) + " 人") + tile("公開作品", s.works, 0, "未計入的投票 " + s.rejected + " 筆");
     var subs = d.subs.slice().sort(function (a, b) { return (a.first || "99").localeCompare(b.first || "99"); });
-    $("p-subs").innerHTML = '<div class="row" style="margin-bottom:10px"><button type="button" id="pubBtn">公開勾選的作品</button><span class="note">勾選後按「公開」，系統會隨機編號並顯示在作品集。投票開始後不能取消公開。</span><span class="status" id="pubMsg"></span></div>'
+    $("p-subs").innerHTML = '<div class="row" style="margin-bottom:10px"><button type="button" id="pubBtn">公開勾選的作品</button><button type="button" class="ghost" id="pdfBtn">匯出全部作品 PDF</button><label class="check" style="font-size:14px"><input type="checkbox" id="pdfAuthor"> PDF 含作者姓名</label><span class="note">勾選後按「公開」，系統會隨機編號並顯示在作品集。投票開始後不能取消公開。</span><span class="status" id="pubMsg"></span></div>'
       + table(["", "首次投稿", "最後修改", "身分", "人事號／姓名", "姓名", "主題", "題目", "字數", "作品"], subs.map(function (r) {
         return "<tr><td>" + (r.no ? "" : '<input type="checkbox" class="pubck" value="' + esc(r.key) + '" aria-label="公開 ' + esc(r.title) + '">') + "</td><td>" + esc(r.first) + "</td><td>" + esc(r.last) + "</td><td>" + esc(r.role) + "</td><td>" + esc(r.id) + "</td><td>" + esc(r.name) + "</td><td>" + esc(r.theme) + "</td><td>" + esc(r.title) + '</td><td class="n">' + esc(r.chars) + "</td><td>"
           + (r.no ? '<b>' + esc(r.no) + ' 號</b> <button type="button" class="ghost unpub" data-no="' + esc(r.no) + '" style="padding:2px 8px;font-size:12px">取消</button>' : '<span class="muted">未公開</span>') + "</td></tr>";
@@ -257,10 +257,50 @@
       if (!t.dataset.armed) { t.dataset.armed = "1"; t.textContent = "確定取消？"; return; }
       adminCall({ action: "unpublish", no: t.dataset.no }).then(function (r) { setMsg("pubMsg", r.msg, r.ok ? "ok" : "err"); loadAdmin(); load(); }).catch(function () {});
     }
+    if (t.id === "pdfBtn") exportPdf($("pdfAuthor").checked);
     if (t.id === "statusBtn") { setMsg("statusMsg", "更新中…"); adminCall({ action: "status" }).then(function (r) { setMsg("statusMsg", r.msg, r.ok ? "ok" : "err"); }).catch(function () {}); }
     if (t.id === "drawBtn") draw(false);
     if (t.id === "redoBtn") { if (!t.dataset.armed) { t.dataset.armed = "1"; t.textContent = "再按一次確認重新抽獎（原結果會被取代）"; return; } draw(true); }
   });
+  /* ---------- 匯出全部作品 PDF（瀏覽器列印 → 另存為 PDF） ---------- */
+  function exportPdf(withAuthor) {
+    var d = S.admin; if (!d) return;
+    var list = d.subs.filter(function (r) { return r.status === "有效" && r.body; })
+      .sort(function (a, b) { return (a.no || "zz").localeCompare(b.no || "zz") || (a.first || "").localeCompare(b.first || ""); });
+    if (!list.length) { setMsg("pubMsg", "目前沒有可匯出的作品。", "err"); return; }
+    var base = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
+    var votes = {}; (d.rank || []).forEach(function (r) { votes[r.no] = r.votes; });
+    var today = new Date().toLocaleString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    var pages = list.map(function (r) {
+      return '<section class="pg"><div class="in"><p class="k">敘事電影讀書會 · 《心靈病房》觀影心得</p>'
+        + '<div class="meta"><b>' + (r.no ? "No." + esc(r.no) : "未公開") + '</b><span class="tag">' + esc(r.themeFull || r.theme) + "</span>"
+        + (withAuthor ? "<span>作者：" + esc(r.name) + "</span>" : "<span>匿名投稿</span>") + "</div>"
+        + "<h2>" + esc(r.title) + '</h2><div class="body">' + esc(r.body) + "</div>"
+        + '<p class="foot">投稿時間 ' + esc(r.first) + "　·　" + esc(r.chars) + " 字" + (r.no && votes[r.no] != null ? "　·　共鳴 " + votes[r.no] + " 票" : "") + "</p></div></section>";
+    }).join("");
+    var css = '@page{size:A4;margin:0}'
+      + '#wit-print{display:none}'
+      + '@media print{body>*:not(#wit-print){display:none!important}body::before{display:none!important}body{background:#fff!important;margin:0}#wit-print{display:block}}'
+      + '#wit-print *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      + '#wit-print{font:12.5pt/1.95 "Noto Sans TC","Microsoft JhengHei",sans-serif;color:#1c2830}'
+      + '#wit-print .pg{width:210mm;height:297mm;page-break-after:always;break-after:page;position:relative;overflow:hidden;background:linear-gradient(rgba(243,245,247,.55),rgba(243,245,247,.55)),url("' + base + 'img/bg2.jpg") center/cover no-repeat}'
+      + '#wit-print .pg.cover{background:linear-gradient(rgba(243,245,247,.45),rgba(243,245,247,.65)),url("' + base + 'img/bg.jpg") center/cover no-repeat;display:flex;align-items:center}'
+      + '#wit-print .in{position:absolute;inset:20mm 18mm;background:rgba(255,255,255,.9);border:1px solid #d8dfe5;border-radius:4mm;padding:16mm 15mm;display:flex;flex-direction:column}'
+      + '#wit-print .cover .in{position:relative;inset:auto;margin:0 20mm;width:calc(100% - 40mm);padding:22mm 16mm;text-align:center;display:block}'
+      + '#wit-print .k{margin:0 0 6mm;color:#1f5d78;font-size:10pt;letter-spacing:.12em}#wit-print h1{font:700 26pt/1.4 "Noto Serif TC",serif;margin:0 0 6mm}#wit-print h2{font:700 19pt/1.45 "Noto Serif TC",serif;margin:2mm 0 6mm}'
+      + '#wit-print .meta{display:flex;gap:4mm;align-items:center;flex-wrap:wrap;font-size:10pt;color:#5d6c76}#wit-print .meta b{font:700 13pt "Noto Serif TC",serif;color:#1f5d78}#wit-print .tag{background:#e2edf2;color:#1f5d78;border-radius:99px;padding:1mm 3mm}'
+      + '#wit-print .body{white-space:pre-wrap;flex:1;text-align:justify}#wit-print .foot{margin:6mm 0 0;padding-top:3mm;border-top:1px solid #d8dfe5;font-size:9.5pt;color:#5d6c76}#wit-print .cover p{margin:2mm 0;color:#36454f}';
+    var inner = '<section class="pg cover"><div class="in"><p class="k">敘事電影讀書會 · 心得競賽</p><h1>《心靈病房（Wit）》<br>觀影心得作品集</h1><p>收錄有效投稿 ' + list.length + ' 篇' + (withAuthor ? "（含作者姓名，限內部紀錄）" : "（匿名版）") + "</p><p>匯出時間：" + esc(today) + "</p></div></section>" + pages;
+    var old = $("wit-print"); if (old) old.remove(); var oldS = $("wit-print-style"); if (oldS) oldS.remove();
+    var st = document.createElement("style"); st.id = "wit-print-style"; st.textContent = css; document.head.appendChild(st);
+    var box = document.createElement("div"); box.id = "wit-print"; box.innerHTML = inner; document.body.appendChild(box);
+    setMsg("pubMsg", "準備 PDF 中…請在列印視窗選「另存為 PDF」，並勾選「背景圖形」。");
+    var imgs = ["img/bg.jpg", "img/bg2.jpg"].map(function (src) { return new Promise(function (res) { var i = new Image(); i.onload = i.onerror = res; i.src = base + src; }); });
+    Promise.all(imgs).then(function () { return document.fonts ? document.fonts.ready : null; }).then(function () {
+      setTimeout(function () { window.print(); }, 300);
+    });
+    window.addEventListener("afterprint", function done() { window.removeEventListener("afterprint", done); var b = $("wit-print"); if (b) b.remove(); var c = $("wit-print-style"); if (c) c.remove(); setMsg("pubMsg", "已開啟列印視窗。"); });
+  }
   function renderLucky() {
     var d = S.admin, open = now() >= T.luckyOpen, has = d.lucky.length > 0;
     var slots = has ? d.lucky.map(function (w) { return '<div class="slot done">' + esc(w.name) + "</div>"; }).join("") : '<div class="slot" id="s0">？</div><div class="slot" id="s1">？</div>';

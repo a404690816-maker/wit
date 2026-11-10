@@ -201,7 +201,7 @@ function adminData_() {
   return {
     ok: true, now: Date.now(), luckyOpen: +CFG.luckyOpen,
     stats: { subValid: okSub.size, attendees: attendees.length, attendNoSub: attendees.filter(p => !okSub.has(k(p))).length, works: works.length, voters: voters.length, voted: voters.filter(p => voteAt[k(p)]).length, rejected: logs.length - okVoteRows.length },
-    subs: subs.map(r => ({ key: r[2] + '|' + norm_(r[3]), first: fmt_(r[0]), last: fmt_(r[1]), role: r[2], id: String(r[3]), name: r[4], theme: String(r[5]).slice(0, 3), title: r[6], chars: r[8], status: r[9], no: r[10] ? String(r[10]).padStart(2, '0') : '' })),
+    subs: subs.map(r => ({ key: r[2] + '|' + norm_(r[3]), first: fmt_(r[0]), last: fmt_(r[1]), role: r[2], id: String(r[3]), name: r[4], theme: String(r[5]).slice(0, 3), themeFull: r[5], title: r[6], body: r[7], chars: r[8], status: r[9], no: r[10] ? String(r[10]).padStart(2, '0') : '' })),
     noSub: attendees.filter(p => !okSub.has(k(p))).map(p => ({ role: p.role, id: p.id, name: p.name })),
     voted: voters.filter(p => voteAt[k(p)]).map(p => ({ role: p.role, id: p.id, name: p.name, at: voteAt[k(p)] })),
     notVoted: voters.filter(p => !voteAt[k(p)]).map(p => ({ role: p.role, id: p.id, name: p.name })),
