@@ -85,7 +85,7 @@
   function load() {
     apiGet().then(function (d) {
       if (!d || !d.ok) throw new Error("bad");
-      S.data = d; S.offset = d.now - Date.now(); if (d.t) T = d.t; renderAll();
+      S.data = d; S.offset = d.now - Date.now(); if (d.t) T = { subOpen: d.t.submitOpen, subClose: d.t.submitClose, voteOpen: d.t.voteOpen, voteClose: d.t.voteClose, luckyOpen: d.t.luckyOpen }; renderAll();
     }).catch(function (err) {
       $("voteState").textContent = err && err.message === "noapi" ? "系統設定中，作品集即將開放。" : "暫時無法載入作品，請稍後重新整理。";
       renderAll();
