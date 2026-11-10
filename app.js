@@ -64,7 +64,7 @@
   function renderWrite() {
     var t = now(), before = t < T.subOpen, open = !before && t < T.subClose;
     $("subState").textContent = !API ? "系統設定中，投稿功能即將開放。" : before ? "投稿將於 11/11（三）13:30 開放，至 11/13（五）中午 12:00 截止。" : open ? "投稿開放中，至 11/13（五）中午 12:00 截止。" : "投稿已於 11/13（五）中午 12:00 截止，感謝大家的分享。";
-    var f = $("essayForm"); var dis = !open || !API;
+    var f = $("essayForm"); var dis = !open || !API || S.submitted;
     Array.prototype.forEach.call(f.elements, function (x) { x.disabled = dis; });
   }
   $("essayForm").addEventListener("submit", function (e) {
@@ -76,8 +76,13 @@
     if (!o.theme || !o.title) return setMsg("sMsg", "請選擇主題並填寫題目。", "err");
     if (n < 200 || n > 300) return setMsg("sMsg", "內文目前 " + n + " 字，請調整為 200–300 字。", "err");
     if (!o.privacy) return setMsg("sMsg", "請勾選隱私確認。", "err");
+    if (!$("sFinal").checked) return setMsg("sMsg", "請勾選「送出後不能修改」的確認。", "err");
     $("sSend").disabled = true; setMsg("sMsg", "送出中…");
-    apiPost(o).then(function (r) { setMsg("sMsg", r.msg, r.ok ? "ok" : "err"); $("sSend").disabled = false; });
+    apiPost(o).then(function (r) {
+      setMsg("sMsg", r.msg, r.ok ? "ok" : "err");
+      if (r.ok || r.done) { Array.prototype.forEach.call($("essayForm").elements, function (x) { x.disabled = true; }); S.submitted = true; }
+      else $("sSend").disabled = false;
+    });
   });
 
   /* ---------------- 作品集與投票 ---------------- */

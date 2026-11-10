@@ -130,13 +130,12 @@ function submit_(b) {
     const rows = sh.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][2] === person.role && norm_(rows[i][3]) === person.key) {
-        if (rows[i][10]) return { ok: false, msg: '您的作品已公開為 ' + rows[i][10] + ' 號，無法再修改。' };
-        sh.getRange(i + 1, 2, 1, 9).setValues([[now, person.role, acct_(person), person.name, theme, title, body, n, '有效']]);
-        return { ok: true, msg: '已更新您的投稿（首次投稿時間不變）。謝謝您的分享！' };
+        // 公平起見，每人只能投稿一次，送出後不得修改
+        return { ok: false, msg: '您已經投稿過了，每人限投稿一篇，送出後不能修改。', done: true };
       }
     }
     sh.appendRow([now, now, person.role, acct_(person), person.name, theme, title, body, n, '有效', '']);
-    return { ok: true, msg: '投稿成功，謝謝您的分享！截稿前可以重新送出覆蓋。' };
+    return { ok: true, msg: '投稿成功，謝謝您的分享！' };
   } finally { lock.releaseLock(); }
 }
 
