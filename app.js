@@ -197,7 +197,7 @@
     $("tiles").innerHTML = tile("有效投稿", s.subValid, s.attendees, s.attendees ? "應投稿 " + s.attendees + " 人" : "名單尚未標記參加者")
       + tile("參加者未投稿", s.attendNoSub, 0, "列入 Seminar 提問名單") + tile("已投票", s.voted, s.voters, "未投票 " + (s.voters - s.voted) + " 人") + tile("公開作品", s.works, 0, "未計入的投票 " + s.rejected + " 筆");
     var subs = d.subs.slice().sort(function (a, b) { return (a.first || "99").localeCompare(b.first || "99"); });
-    $("p-subs").innerHTML = '<div class="row" style="margin-bottom:10px"><button type="button" id="pubBtn">公開勾選的作品</button><button type="button" class="ghost" id="pdfBtn">匯出全部作品 PDF</button><label class="check" style="font-size:14px"><input type="checkbox" id="pdfAuthor"> PDF 含作者姓名</label><span class="note">勾選後按「公開」，系統會隨機編號並顯示在作品集。投票開始後不能取消公開。</span><span class="status" id="pubMsg"></span></div>'
+    $("p-subs").innerHTML = '<div class="row" style="margin-bottom:10px"><button type="button" id="pubBtn">公開勾選的作品</button><button type="button" class="ghost" id="pdfBtn">匯出全部作品 PDF（依票數排序）</button><label class="check" style="font-size:14px"><input type="checkbox" id="pdfAuthor"> PDF 含作者姓名</label><span class="note">勾選後按「公開」，系統會隨機編號並顯示在作品集。投票開始後不能取消公開。</span><span class="status" id="pubMsg"></span></div>'
       + table(["", "首次投稿", "最後修改", "身分", "人事號／姓名", "姓名", "主題", "題目", "字數", "作品"], subs.map(function (r) {
         return "<tr><td>" + (r.no ? "" : '<input type="checkbox" class="pubck" value="' + esc(r.key) + '" aria-label="公開 ' + esc(r.title) + '">') + "</td><td>" + esc(r.first) + "</td><td>" + esc(r.last) + "</td><td>" + esc(r.role) + "</td><td>" + esc(r.id) + "</td><td>" + esc(r.name) + "</td><td>" + esc(r.theme) + "</td><td>" + esc(r.title) + '</td><td class="n">' + esc(r.chars) + "</td><td>"
           + (r.no ? '<b>' + esc(r.no) + ' 號</b> <button type="button" class="ghost unpub" data-no="' + esc(r.no) + '" style="padding:2px 8px;font-size:12px">取消</button>' : '<span class="muted">未公開</span>') + "</td></tr>";
@@ -265,8 +265,13 @@
   /* ---------- 匯出全部作品 PDF（瀏覽器列印 → 另存為 PDF） ---------- */
   function exportPdf(withAuthor) {
     var d = S.admin; if (!d) return;
+    // 排序：票數多者在前（同票以首次投稿時間較早者優先，與後台排行榜一致）；未公開作品排最後
+    var rankIdx = {}; (d.rank || []).forEach(function (r, i) { rankIdx[r.no] = i; });
     var list = d.subs.filter(function (r) { return r.status === "有效" && r.body; })
-      .sort(function (a, b) { return (a.no || "zz").localeCompare(b.no || "zz") || (a.first || "").localeCompare(b.first || ""); });
+      .sort(function (a, b) {
+        var ra = a.no && a.no in rankIdx ? rankIdx[a.no] : 1e9, rb = b.no && b.no in rankIdx ? rankIdx[b.no] : 1e9;
+        return (ra - rb) || (a.first || "").localeCompare(b.first || "");
+      });
     if (!list.length) { setMsg("pubMsg", "目前沒有可匯出的作品。", "err"); return; }
     var base = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
     var votes = {}; (d.rank || []).forEach(function (r) { votes[r.no] = r.votes; });
@@ -274,7 +279,8 @@
     var pages = list.map(function (r) {
       return '<section class="pg"><div class="in"><p class="k">敘事電影讀書會 · 《心靈病房》觀影心得</p>'
         + '<div class="meta"><b>' + (r.no ? "No." + esc(r.no) : "未公開") + '</b><span class="tag">' + esc(r.themeFull || r.theme) + "</span>"
-        + (withAuthor ? "<span>作者：" + esc(r.name) + "</span>" : "<span>匿名投稿</span>") + "</div>"
+        + (withAuthor ? "<span>作者：" + esc(r.name) + "</span>" : "<span>匿名投稿</span>")
+        + (r.no && r.no in rankIdx && votes[r.no] > 0 ? '<span class="rk">第 ' + (rankIdx[r.no] + 1) + " 名" + (rankIdx[r.no] < 3 ? "・最具共鳴獎" : "") + "</span>" : "") + "</div>"
         + "<h2>" + esc(r.title) + '</h2><div class="body">' + esc(r.body) + "</div>"
         + '<p class="foot">投稿時間 ' + esc(r.first) + "　·　" + esc(r.chars) + " 字" + (r.no && votes[r.no] != null ? "　·　共鳴 " + votes[r.no] + " 票" : "") + "</p></div></section>";
     }).join("");
@@ -288,9 +294,9 @@
       + '#wit-print .in{position:absolute;inset:20mm 18mm;background:rgba(255,255,255,.9);border:1px solid #d8dfe5;border-radius:4mm;padding:16mm 15mm;display:flex;flex-direction:column}'
       + '#wit-print .cover .in{position:relative;inset:auto;margin:0 20mm;width:calc(100% - 40mm);padding:22mm 16mm;text-align:center;display:block}'
       + '#wit-print .k{margin:0 0 6mm;color:#1f5d78;font-size:10pt;letter-spacing:.12em}#wit-print h1{font:700 26pt/1.4 "Noto Serif TC",serif;margin:0 0 6mm}#wit-print h2{font:700 19pt/1.45 "Noto Serif TC",serif;margin:2mm 0 6mm}'
-      + '#wit-print .meta{display:flex;gap:4mm;align-items:center;flex-wrap:wrap;font-size:10pt;color:#5d6c76}#wit-print .meta b{font:700 13pt "Noto Serif TC",serif;color:#1f5d78}#wit-print .tag{background:#e2edf2;color:#1f5d78;border-radius:99px;padding:1mm 3mm}'
+      + '#wit-print .meta{display:flex;gap:4mm;align-items:center;flex-wrap:wrap;font-size:10pt;color:#5d6c76}#wit-print .meta b{font:700 13pt "Noto Serif TC",serif;color:#1f5d78}#wit-print .tag{background:#e2edf2;color:#1f5d78;border-radius:99px;padding:1mm 3mm}#wit-print .rk{margin-left:auto;color:#a8811f;font-weight:700}'
       + '#wit-print .body{white-space:pre-wrap;flex:1;text-align:justify}#wit-print .foot{margin:6mm 0 0;padding-top:3mm;border-top:1px solid #d8dfe5;font-size:9.5pt;color:#5d6c76}#wit-print .cover p{margin:2mm 0;color:#36454f}';
-    var inner = '<section class="pg cover"><div class="in"><p class="k">敘事電影讀書會 · 心得競賽</p><h1>《心靈病房（Wit）》<br>觀影心得作品集</h1><p>收錄有效投稿 ' + list.length + ' 篇' + (withAuthor ? "（含作者姓名，限內部紀錄）" : "（匿名版）") + "</p><p>匯出時間：" + esc(today) + "</p></div></section>" + pages;
+    var inner = '<section class="pg cover"><div class="in"><p class="k">敘事電影讀書會 · 心得競賽</p><h1>《心靈病房（Wit）》<br>觀影心得作品集</h1><p>收錄有效投稿 ' + list.length + ' 篇，依共鳴票數由高至低排列' + (withAuthor ? "（含作者姓名，限內部紀錄）" : "（匿名版）") + "</p><p>匯出時間：" + esc(today) + "</p></div></section>" + pages;
     var old = $("wit-print"); if (old) old.remove(); var oldS = $("wit-print-style"); if (oldS) oldS.remove();
     var st = document.createElement("style"); st.id = "wit-print-style"; st.textContent = css; document.head.appendChild(st);
     var box = document.createElement("div"); box.id = "wit-print"; box.innerHTML = inner; document.body.appendChild(box);
