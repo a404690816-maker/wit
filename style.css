@@ -173,3 +173,8 @@ td.n{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:720px){.steps{grid-template-columns:1fr}.rings{grid-template-columns:repeat(2,1fr)}.scenes{grid-template-columns:1fr}}
 @media (max-width:420px){h1{font-size:26px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* 後台投稿名單：點題目展開全文 */
+#p-subs td.subt{min-width:220px;max-width:420px}
+#p-subs td.subt summary{cursor:pointer;color:var(--accent,#2a6f97);font-weight:600}
+#p-subs td.subt .subbody{white-space:pre-wrap;margin-top:6px;padding:8px 10px;background:var(--accent-soft);border-radius:6px;line-height:1.7;font-size:14px}
