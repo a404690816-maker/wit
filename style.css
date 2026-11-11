@@ -175,6 +175,6 @@ td.n{text-align:right;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
 /* 後台投稿名單：點題目展開全文 */
-#p-subs td.subt{min-width:220px;max-width:420px}
+#p-subs td.subt{min-width:340px;max-width:560px}
 #p-subs td.subt summary{cursor:pointer;color:var(--accent,#2a6f97);font-weight:600}
 #p-subs td.subt .subbody{white-space:pre-wrap;margin-top:6px;padding:8px 10px;background:var(--accent-soft);border-radius:6px;line-height:1.7;font-size:14px}
