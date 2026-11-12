@@ -11,7 +11,7 @@
   function $(id) { return document.getElementById(id); }
   function now() { return Date.now() + S.offset; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function chars(s) { return String(s || "").replace(/[\s\p{P}\p{S}]/gu, "").length; } // 不含空白與標點符號
+  function chars(s) { return String(s || "").replace(/\s/g, "").length; }
   function setMsg(id, text, kind) { var e = $(id); e.textContent = text || ""; e.className = "status" + (kind ? " " + kind : ""); }
 
   /* ---------------- API ---------------- */
@@ -58,7 +58,7 @@
   roleLabel("srole", "sKeyLabel"); roleLabel("vrole", "vKeyLabel");
   $("sBody").addEventListener("input", function () {
     var n = chars(this.value), c = $("sCount");
-    c.textContent = n + " / 200–300 字（不含標點符號與空白）" + (n > 0 && n < 200 ? "　還差 " + (200 - n) + " 字" : n > 300 ? "　超過 " + (n - 300) + " 字" : "");
+    c.textContent = n + " / 200–300 字（不含空白）" + (n > 0 && n < 200 ? "　還差 " + (200 - n) + " 字" : n > 300 ? "　超過 " + (n - 300) + " 字" : "");
     c.classList.toggle("off", n > 0 && (n < 200 || n > 300));
   });
   function renderWrite() {
