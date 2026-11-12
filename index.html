@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 <script src="config.js"></script>
 </head>
 <body>
@@ -102,7 +102,7 @@
     <h2>競賽辦法</h2>
     <ul>
       <li>11/11 參與敘事電影欣賞的同仁，每人皆須投稿一篇。截稿時間：11/13（五）中午 12:00。</li>
-      <li>字數 200–300 字（不含空白），請選擇主題一至三其中一個主題撰寫。</li>
+      <li>字數 200–300 字（不含標點符號與空白），請選擇主題一至三其中一個主題撰寫。</li>
       <li>作品以匿名編號公開，只有承辦人知道作者是誰。請勿寫出可辨識的病人或同仁資料。</li>
       <li>未繳交者將進入後續 Seminar 提問者名單（至少提問兩個問題）。</li>
       <li>最具共鳴獎 3 名，每名 500 元；幸運參與獎 2 名，由有效投稿者抽出。</li>
@@ -123,7 +123,7 @@
       <div><label for="sTheme">寫作主題</label>
         <select id="sTheme"><option value="">請選擇</option><option>主題一：多停留的那「一會兒」</option><option>主題二：換一雙眼睛看</option><option>主題三：點頭之後</option></select></div>
       <div><label for="sTitle">題目</label><input type="text" id="sTitle" maxlength="40"></div>
-      <div><label for="sBody">內文</label><textarea id="sBody"></textarea><div class="count" id="sCount">0 / 200–300 字（不含空白）</div></div>
+      <div><label for="sBody">內文</label><textarea id="sBody"></textarea><div class="count" id="sCount">0 / 200–300 字（不含標點符號與空白）</div></div>
       <label class="check" for="sPrivacy"><input type="checkbox" id="sPrivacy"> 我確認文中沒有可辨識的病人或同仁資料（姓名、床號、病歷號等）。</label>
       <label class="check" for="sFinal"><input type="checkbox" id="sFinal"> 我了解每人限投稿一篇，<strong>送出後不能修改或重新投稿</strong>，已確認內容無誤。</label>
       <div class="row"><button type="submit" id="sSend">送出投稿</button><span class="status" id="sMsg" role="status"></span></div>
@@ -232,6 +232,6 @@
   <div class="row" style="justify-content:flex-end"><button class="ghost" id="vCancel" type="button">返回</button><button id="vSend" type="button">確認送出</button></div>
 </div></div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
