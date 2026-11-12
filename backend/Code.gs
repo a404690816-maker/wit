@@ -115,10 +115,10 @@ function submit_(b) {
   const theme = THEMES.indexOf(b.theme) >= 0 ? b.theme : '';
   const title = String(b.title || '').trim().slice(0, 40);
   const body = String(b.body || '').trim();
-  const n = body.replace(/\s/g, '').length;
+  const n = body.replace(/[\s\p{P}\p{S}]/gu, '').length; // 不含空白與標點符號（11/12 起）
   if (!role || !key) return { ok: false, msg: '請選擇身分並輸入' + (role === ROLE_INTERN ? '姓名' : '人事號') + '。' };
   if (!theme || !title) return { ok: false, msg: '請選擇主題並填寫題目。' };
-  if (n < CFG.minChars || n > CFG.maxChars) return { ok: false, msg: '內文目前 ' + n + ' 字，請調整為 200–300 字（不含空白）。' };
+  if (n < CFG.minChars || n > CFG.maxChars) return { ok: false, msg: '內文目前 ' + n + ' 字，請調整為 200–300 字（不含標點符號與空白）。' };
   if (!b.privacy) return { ok: false, msg: '請勾選隱私確認。' };
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return { ok: false, msg: '目前投稿人數較多，請稍候再送出。' };
